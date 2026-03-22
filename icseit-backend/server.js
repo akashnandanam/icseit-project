@@ -2,6 +2,10 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 
+app.use(cors({
+  origin: "*"
+}));
+
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 dotenv.config();
