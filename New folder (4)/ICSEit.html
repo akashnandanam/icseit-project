@@ -1,0 +1,617 @@
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ICSEit — ICSE Class 10 AI Study Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #181c27; --surface2: #1e2335; --border: #2a3050;
+    --accent: #4f8ef7; --accent2: #38d9a9; --accent3: #f9a825;
+    --text: #e8ecf4; --text-muted: #7a85a3; --text-dim: #4a5272;
+    --geo: #4f8ef7; --bio: #38d9a9; --radius: 14px; --sidebar: 270px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; overflow:hidden; }
+  .sidebar { width:var(--sidebar); background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; transition:transform .3s ease; z-index:10; overflow-y:auto; }
+  .sidebar::-webkit-scrollbar { width:4px; }
+  .sidebar::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .logo-area { padding:22px 20px 18px; border-bottom:1px solid var(--border); }
+  .logo { font-family:'Fraunces',serif; font-size:22px; font-weight:700; letter-spacing:-0.5px; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .logo span { font-style:italic; font-weight:300; }
+  .logo-sub { font-size:11px; color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; margin-top:3px; }
+  .section-label { font-size:10px; letter-spacing:1.8px; text-transform:uppercase; color:var(--text-dim); padding:14px 20px 7px; font-weight:600; }
+  .subject-list,.mode-list,.chapter-list { padding:0 12px; display:flex; flex-direction:column; gap:3px; }
+  .subject-btn { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; border:none; background:transparent; color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:all .2s; text-align:left; position:relative; width:100%; }
+  .subject-btn:hover { background:var(--surface2); color:var(--text); }
+  .subject-btn.active { color:var(--text); background:var(--surface2); }
+  .subject-btn.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; border-radius:0 3px 3px 0; }
+  .subject-btn[data-sub="geography"].active::before { background:var(--geo); }
+  .subject-btn[data-sub="biology"].active::before { background:var(--bio); }
+  .subject-dot { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .subject-btn[data-sub="geography"] .subject-dot { background:rgba(79,142,247,.15); }
+  .subject-btn[data-sub="geography"].active .subject-dot { background:rgba(79,142,247,.25); }
+  .subject-btn[data-sub="biology"] .subject-dot { background:rgba(56,217,169,.15); }
+  .subject-btn[data-sub="biology"].active .subject-dot { background:rgba(56,217,169,.25); }
+  .coming-soon-tag { font-size:9px; letter-spacing:.5px; background:rgba(249,168,37,.12); color:var(--accent3); padding:2px 6px; border-radius:4px; margin-left:auto; }
+  .chapter-btn { display:flex; align-items:center; gap:8px; padding:7px 12px; border-radius:8px; border:none; background:transparent; color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:12px; cursor:pointer; transition:all .2s; text-align:left; width:100%; line-height:1.4; }
+  .chapter-btn:hover { background:var(--surface2); color:var(--text); }
+  .chapter-btn.active { background:rgba(56,217,169,.08); color:var(--accent2); }
+  .chapter-btn.active-geo { background:rgba(79,142,247,.08); color:var(--geo); }
+  .chapter-num { font-size:10px; font-weight:700; width:18px; flex-shrink:0; opacity:.5; }
+  .mode-btn { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:10px; border:none; background:transparent; color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; transition:all .2s; text-align:left; width:100%; }
+  .mode-btn:hover { background:var(--surface2); color:var(--text); }
+  .mode-btn.active { background:var(--surface2); color:var(--accent2); }
+  .mode-icon { font-size:15px; width:22px; text-align:center; }
+  .sidebar-footer { margin-top:auto; padding:14px 20px; border-top:1px solid var(--border); font-size:11px; color:var(--text-dim); line-height:1.6; }
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:13px 24px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+  .topbar-left { display:flex; align-items:center; gap:10px; }
+  .current-subject { font-size:13px; font-weight:600; padding:4px 12px; border-radius:20px; letter-spacing:.3px; }
+  .current-subject.geo { background:rgba(79,142,247,.15); color:var(--geo); }
+  .current-subject.bio { background:rgba(56,217,169,.15); color:var(--bio); }
+  .current-mode-tag { font-size:12px; color:var(--text-dim); padding:4px 10px; border-radius:20px; border:1px solid var(--border); }
+  .topbar-right { display:flex; align-items:center; gap:8px; }
+  .clear-btn { font-size:12px; color:var(--text-muted); background:transparent; border:1px solid var(--border); padding:5px 12px; border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+  .clear-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .chat-area { flex:1; overflow-y:auto; padding:28px 0; scroll-behavior:smooth; }
+  .chat-area::-webkit-scrollbar { width:6px; }
+  .chat-area::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  .chat-inner { max-width:780px; margin:0 auto; padding:0 24px; display:flex; flex-direction:column; gap:22px; }
+  .welcome { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; text-align:center; gap:18px; animation:fadeUp .5s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .welcome-icon { width:68px; height:68px; border-radius:20px; background:linear-gradient(135deg,rgba(79,142,247,.2),rgba(56,217,169,.2)); border:1px solid rgba(79,142,247,.3); display:flex; align-items:center; justify-content:center; font-size:30px; }
+  .welcome h1 { font-family:'Fraunces',serif; font-size:26px; font-weight:600; letter-spacing:-0.5px; }
+  .welcome h1 em { font-style:italic; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .welcome p { font-size:14px; color:var(--text-muted); max-width:420px; line-height:1.6; }
+  .source-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(56,217,169,.1); border:1px solid rgba(56,217,169,.2); color:var(--accent2); padding:5px 12px; border-radius:20px; font-size:12px; font-weight:500; }
+  .suggestion-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; width:100%; max-width:560px; margin-top:6px; }
+  .suggestion-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; cursor:pointer; text-align:left; transition:all .2s; font-family:'DM Sans',sans-serif; }
+  .suggestion-card:hover { border-color:var(--accent); background:var(--surface2); transform:translateY(-1px); }
+  .suggestion-card .s-label { font-size:10px; letter-spacing:1.2px; text-transform:uppercase; font-weight:600; margin-bottom:4px; }
+  .suggestion-card[data-sub="geography"] .s-label { color:var(--geo); }
+  .suggestion-card[data-sub="biology"] .s-label { color:var(--bio); }
+  .suggestion-card .s-text { font-size:12.5px; color:var(--text); line-height:1.4; }
+  .message { display:flex; gap:14px; animation:fadeUp .3s ease; }
+  .message.user { flex-direction:row-reverse; }
+  .avatar { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; margin-top:2px; }
+  .message.user .avatar { background:linear-gradient(135deg,var(--accent),#7b61ff); }
+  .message.assistant .avatar { background:linear-gradient(135deg,var(--surface2),var(--surface)); border:1px solid var(--border); font-size:16px; }
+  .bubble { max-width:76%; padding:13px 17px; border-radius:var(--radius); font-size:14px; line-height:1.75; }
+  .message.user .bubble { background:linear-gradient(135deg,rgba(79,142,247,.18),rgba(123,97,255,.12)); border:1px solid rgba(79,142,247,.25); color:var(--text); border-radius:var(--radius) 4px var(--radius) var(--radius); }
+  .message.assistant .bubble { background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:4px var(--radius) var(--radius) var(--radius); }
+  .bubble strong { color:var(--text); font-weight:600; }
+  .bubble em { color:var(--accent2); font-style:italic; }
+  .bubble h3 { font-family:'Fraunces',serif; font-size:16px; font-weight:600; color:var(--text); margin-bottom:8px; margin-top:4px; letter-spacing:-0.3px; }
+  .bubble p { margin-bottom:10px; }
+  .bubble p:last-child { margin-bottom:0; }
+  .bubble ul,.bubble ol { padding-left:20px; margin:8px 0; }
+  .bubble li { margin-bottom:5px; }
+  .bubble .section-head { display:inline-block; font-size:11px; letter-spacing:1.2px; text-transform:uppercase; font-weight:600; margin-bottom:6px; margin-top:12px; padding:2px 8px; border-radius:4px; }
+  .bubble .section-head.geo { background:rgba(79,142,247,.15); color:var(--geo); }
+  .bubble .section-head.bio { background:rgba(56,217,169,.15); color:var(--bio); }
+  .bubble .exam-box { background:rgba(249,168,37,.07); border:1px solid rgba(249,168,37,.2); border-radius:10px; padding:12px 14px; margin-top:10px; }
+  .bubble .exam-box .ex-title { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--accent3); font-weight:600; margin-bottom:6px; }
+  .bubble .point-list { list-style:none; padding:0; }
+  .bubble .point-list li { padding-left:18px; position:relative; margin-bottom:6px; }
+  .bubble .point-list li::before { content:'→'; position:absolute; left:0; color:var(--accent); font-size:12px; }
+  .typing-indicator { display:flex; align-items:center; gap:5px; padding:14px 18px; }
+  .typing-indicator span { width:7px; height:7px; background:var(--text-dim); border-radius:50%; animation:bounce .8s ease infinite; }
+  .typing-indicator span:nth-child(2) { animation-delay:.15s; }
+  .typing-indicator span:nth-child(3) { animation-delay:.3s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+  .input-area { padding:14px 24px 18px; border-top:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+  .input-inner { max-width:780px; margin:0 auto; }
+  .input-box { display:flex; align-items:flex-end; gap:10px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px 10px 16px; transition:border-color .2s; }
+  .input-box:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px rgba(79,142,247,.1); }
+  #chat-input { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; line-height:1.5; resize:none; max-height:140px; min-height:24px; }
+  #chat-input::placeholder { color:var(--text-dim); }
+  .send-btn { width:36px; height:36px; background:var(--accent); border:none; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .2s; color:white; font-size:16px; }
+  .send-btn:hover { background:#3a7de8; transform:scale(1.05); }
+  .send-btn:disabled { background:var(--border); cursor:not-allowed; transform:none; }
+  .input-hint { font-size:11px; color:var(--text-dim); text-align:center; margin-top:7px; }
+  .menu-toggle { display:none; background:transparent; border:1px solid var(--border); color:var(--text-muted); width:34px; height:34px; border-radius:8px; cursor:pointer; font-size:16px; align-items:center; justify-content:center; }
+  @media (max-width:700px) {
+    .sidebar { position:fixed; left:0; top:0; bottom:0; transform:translateX(-100%); }
+    .sidebar.open { transform:translateX(0); }
+    .menu-toggle { display:flex; }
+    .suggestion-grid { grid-template-columns:1fr; }
+    .bubble { max-width:92%; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="logo-area">
+    <div class="logo">ICSE<span>it</span></div>
+    <div class="logo-sub">Class 10 · AI Study Assistant</div>
+  </div>
+  <div class="section-label">Subjects</div>
+  <div class="subject-list">
+    <button class="subject-btn active" data-sub="geography" onclick="setSubject('geography',this)">
+      <span class="subject-dot">🌍</span> Geography
+    </button>
+    <button class="subject-btn" data-sub="biology" onclick="setSubject('biology',this)">
+      <span class="subject-dot">🧬</span> Biology
+    </button>
+    <button class="subject-btn" style="opacity:.5;cursor:default;">
+      <span class="subject-dot">📐</span> Mathematics <span class="coming-soon-tag">Soon</span>
+    </button>
+    <button class="subject-btn" style="opacity:.5;cursor:default;">
+      <span class="subject-dot">⚗️</span> Chemistry <span class="coming-soon-tag">Soon</span>
+    </button>
+  </div>
+  <div class="section-label">Chapters</div>
+  <div class="chapter-list" id="chapter-list"></div>
+  <div class="section-label" style="margin-top:14px;">Study Mode</div>
+  <div class="mode-list">
+    <button class="mode-btn active" data-mode="chat" onclick="setMode('chat',this)"><span class="mode-icon">💬</span> Ask Anything</button>
+    <button class="mode-btn" data-mode="notes" onclick="setMode('notes',this)"><span class="mode-icon">📝</span> Make Notes</button>
+    <button class="mode-btn" data-mode="exam" onclick="setMode('exam',this)"><span class="mode-icon">📋</span> Exam Questions</button>
+    <button class="mode-btn" data-mode="definition" onclick="setMode('definition',this)"><span class="mode-icon">📖</span> Definitions</button>
+    <button class="mode-btn" data-mode="summary" onclick="setMode('summary',this)"><span class="mode-icon">⚡</span> Quick Summary</button>
+  </div>
+  <div class="sidebar-footer">
+    <div style="margin-bottom:3px;font-weight:500;color:var(--text-muted)">ICSEit v2.0</div>
+    📗 Selina Concise Textbooks<br>+ Claude AI · ICSE Class 10
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <span class="current-subject geo" id="subject-tag">🌍 Geography</span>
+      <span class="current-mode-tag" id="mode-tag">Ask Anything</span>
+    </div>
+    <div class="topbar-right">
+      <button class="clear-btn" onclick="clearChat()">Clear chat</button>
+    </div>
+  </div>
+  <div class="chat-area" id="chat-area">
+    <div class="chat-inner" id="chat-inner">
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">📚</div>
+        <h1>Study smarter with <em>ICSEit</em></h1>
+        <p>Answers based directly on your <strong>Selina Concise</strong> Class 10 textbooks — Geography &amp; Biology.</p>
+        <div class="source-badge">📗 Selina Concise Textbook · ICSE Class 10</div>
+        <div class="suggestion-grid" id="suggestion-grid"></div>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <div class="input-inner">
+      <div class="input-box">
+        <textarea id="chat-input" rows="1" placeholder="Ask about any topic from your textbook…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+      <div class="input-hint">Enter to send · Shift+Enter for new line</div>
+    </div>
+  </div>
+</main>
+
+<script>
+let currentSubject='geography', currentMode='chat', currentChapter=null, messages=[], isLoading=false;
+
+const chapters={
+  geography:[
+    {num:1,title:'Soil Resources'},{num:2,title:'Natural Vegetation'},{num:3,title:'Water Resources'},
+    {num:4,title:'Mineral and Energy Resources'},{num:5,title:'Agriculture'},
+    {num:6,title:'Manufacturing Industries'},{num:7,title:'Transport'},
+    {num:8,title:'Waste Management'},{num:9,title:'Map of India'}
+  ],
+  biology:[
+    {num:1,title:'Cell — The Unit of Life'},{num:2,title:'Chromosomes, Cell Cycle & Cell Division'},
+    {num:3,title:'Genetics — Basic Fundamentals'},{num:4,title:'Absorption by Roots'},
+    {num:5,title:'Transpiration'},{num:6,title:'Photosynthesis'},
+    {num:7,title:'Circulatory System'},{num:8,title:'Excretory System'},
+    {num:9,title:'Nervous System & Sense Organs'},{num:10,title:'Endocrine System'},
+    {num:11,title:'Reproductive System'},{num:12,title:'Population'},
+    {num:13,title:'Aids to Health'},{num:14,title:'Human Evolution'},{num:15,title:'Pollution'}
+  ]
+};
+
+const selinaKnowledge={
+biology:`SELINA CONCISE BIOLOGY CLASS 10 — FULL SYLLABUS
+
+CH1 CELL:
+- 3 essential parts: cell membrane (semi-permeable, lipoproteins, fine pores), cytoplasm (metabolic activities, pyruvic acid in anaerobic respiration), nucleus (controls all functions, contains chromatin/DNA, if removed cell dies)
+- Cell wall (plants only): non-living, cellulose, rigid, freely permeable, gives shape
+- Organelles: Endoplasmic reticulum (rough ER = protein synthesis via ribosomes; smooth ER = lipid synthesis); Ribosomes (protein synthesis, made of RNA); Mitochondria (powerhouse, aerobic respiration, ATP, double membrane, cristae, has DNA); Golgi body (secretion, packaging, produces lysosomes); Lysosomes (SUICIDE BAGS, contain 40 enzymes, intracellular digestion, destroy foreign substances); Centrosome (animal only, centrioles, initiates cell division, forms spindle fibres); Plastids (plant only — chloroplasts=photosynthesis, leucoplasts=store starch, chromoplasts=colour in flowers/fruits); Vacuoles (large permanent in plant, small/temporary in animal)
+- Plant vs Animal: plant has cell wall, plastids, large vacuoles, no centrosome; animal has centrosome, small vacuoles, no cell wall/plastids
+- Onion peel: rectangular cells, cell wall, nucleus, large vacuoles
+
+CH2 CHROMOSOMES, CELL CYCLE AND CELL DIVISION:
+- Chromosomes: condense from chromatin fibres during cell division; name = chroma(coloured)+soma(body); parts: chromatids, centromere, telomere
+- Genes: segments of DNA on chromosomes; control hereditary characters
+- Cell Cycle: Interphase (G1=growth, S=DNA replication, G2=preparation) + M phase
+- MITOSIS (equational division):
+  * Prophase: chromatin condenses, nuclear membrane disappears, spindle forms, centrioles to poles
+  * Metaphase: chromosomes at equatorial plate, centromeres attach to spindle
+  * Anaphase: centromeres split, chromatids move to poles
+  * Telophase: nuclear membrane reforms, nucleoli reappear, chromosomes uncoil
+  * Cytokinesis: cleavage furrow (animal), cell plate (plant)
+  * SIGNIFICANCE: growth, repair, asexual reproduction, maintains chromosome number
+- MEIOSIS (reductive division): 2n→n; Meiosis I (reductional, crossing over at pachytene) + Meiosis II (equational); produces 4 haploid gametes; SIGNIFICANCE: reduces chromosome number, genetic variation
+
+CH3 GENETICS:
+- Autosomes + sex chromosomes (XX=female, XY=male); sex determined by sperm
+- Dominant vs recessive alleles; Genotype vs Phenotype
+- Tongue rolling = dominant trait; colour blindness, haemophilia = sex-linked (X chromosome)
+- Mendel's Laws: Dominance, Segregation, Independent Assortment
+- Monohybrid ratio 3:1; Dihybrid ratio 9:3:3:1
+- Mutation: sudden heritable change in DNA
+
+CH4 ABSORPTION BY ROOTS:
+- Root hair cells: long extension, thin wall, large vacuole, increase surface area
+- Processes: Imbibition (colloids absorb water first); Diffusion (high to low conc, no energy); Osmosis (water through semi-permeable membrane from dilute to concentrated); Osmotic pressure; Active transport (against gradient, needs ATP); Turgidity/Flaccidity/Plasmolysis
+- Root pressure: pushes water up; important for ascent of sap
+- Ascent of sap: root pressure + capillarity + cohesion-tension theory (transpiration pull — most important)
+
+CH5 TRANSPIRATION:
+- Loss of water vapour from aerial parts; Stomatal (80-90%, most important); Cuticular (10-20%); Lenticular (very small)
+- Guard cells control stomata: turgid = open, flaccid = closed
+- Potometer measures rate of water uptake (≈transpiration rate)
+- Factors: temperature, humidity, wind, light, water availability
+- Significance: cooling effect, ascent of sap, mineral concentration, absorption of water
+- Guttation: liquid water loss through hydathodes (night time); Bleeding: sap through wounds
+
+CH6 PHOTOSYNTHESIS:
+- 6CO2 + 6H2O → C6H12O6 + 6O2 (light + chlorophyll)
+- Chlorophyll in thylakoids of chloroplast; traps solar energy
+- Light reactions (thylakoids): photolysis of water, O2 released, ATP + NADPH produced
+- Dark reactions/Calvin cycle (stroma): CO2 fixed, glucose synthesised using ATP+NADPH; RuBP, PGA, G3P
+- Factors: light intensity, CO2 concentration, temperature, water, chlorophyll
+- Tests: iodine test (starch), Engelmann's experiment
+
+CH7 CIRCULATORY SYSTEM:
+- Blood: Plasma (55%, 90% water, proteins-fibrinogen/albumin/globulin, nutrients, hormones); RBCs (haemoglobin, no nucleus, biconcave, carry O2/CO2, 120 day lifespan); WBCs (nucleus, amoeboid, fight infection, types: neutrophils/lymphocytes/monocytes/eosinophils/basophils); Platelets (clotting, smallest, from megakaryocytes)
+- Clotting: Prothrombin→Thrombin (Ca2+ +thromboplastin) → Fibrinogen→Fibrin mesh
+- Blood groups: ABO system; Universal donor: O negative; Universal recipient: AB positive; Rh factor
+- Heart: 4 chambers, pericardium, valves: tricuspid (right AV), bicuspid/mitral (left AV), semilunar (aorta + pulmonary); 72 beats/min; systole=contraction, diastole=relaxation; lub-dub sounds
+- Blood vessels: arteries (from heart, thick wall, no valves); veins (to heart, thin wall, have valves); capillaries (exchange, one cell thick)
+- Pulmonary circulation: right ventricle→pulmonary artery→lungs→pulmonary vein→left atrium
+- Systemic circulation: left ventricle→aorta→body→vena cava→right atrium
+- Hepatic portal system: intestine→liver (portal vein)→hepatic vein→vena cava
+- Lymph and tissue fluid; lymphatic system
+
+CH8 EXCRETORY SYSTEM:
+- Excretion: removal of metabolic wastes; Organs: kidneys (urea, salts), lungs (CO2, water), skin (sweat=salts+urea+water), liver (bile pigments)
+- Kidney: bean-shaped; cortex, medulla, pelvis, ureter; ~1 million nephrons per kidney
+- Nephron: Bowman's capsule + glomerulus (knot of capillaries) + PCT + Loop of Henle + DCT + collecting duct
+- Urine formation: Ultrafiltration (all small molecules into glomerular filtrate; blood cells+proteins stay); Selective reabsorption (glucose, amino acids, water, salts reabsorbed in PCT); Tubular secretion (additional waste added)
+- Urine: water 96%, urea 2%, salts 2%, uric acid, creatinine
+- Dialysis: artificial kidney for kidney failure
+
+CH9 NERVOUS SYSTEM:
+- Neuron: cell body (cyton) + dendrites (receive) + axon (transmit) + myelin sheath + Schwann cells + nodes of Ranvier
+- Types: sensory (afferent), motor (efferent), relay/interneuron
+- Synapse: neurotransmitters (acetylcholine) across synaptic cleft
+- CNS: brain + spinal cord; PNS: 12 cranial + 31 spinal nerve pairs; ANS: sympathetic (fight/flight) + parasympathetic
+- Brain: Cerebrum (largest, conscious activities, memory, intelligence, 2 hemispheres); Cerebellum (balance, coordination, posture); Medulla oblongata (involuntary — breathing, heartbeat); Hypothalamus (thermoregulation, hunger)
+- Reflex arc: receptor→afferent nerve→spinal cord→efferent nerve→effector; Spinal (knee jerk) vs Conditioned (Pavlov's dog)
+- EYE: sclera, cornea, choroid, iris, pupil, lens, retina (rods=dim light, cones=colour), fovea/yellow spot (sharpest), blind spot/optic disc, aqueous humour, vitreous humour; Defects: myopia (concave), hypermetropia (convex), colour blindness, cataract
+- EAR: Outer (pinna, auditory canal, tympanic membrane); Middle (malleus, incus, stapes, Eustachian tube); Inner (cochlea=hearing, semicircular canals=balance)
+
+CH10 ENDOCRINE SYSTEM:
+- Ductless glands; hormones in blood
+- Pituitary (master gland): GH, TSH, ACTH, FSH, LH, ADH (water retention), oxytocin
+- Thyroid: thyroxine (needs iodine, regulates metabolism); deficiency: hypothyroidism (goitre, cretinism, myxoedema); excess: hyperthyroidism
+- Adrenals: cortex (corticosteroids); medulla (adrenaline=emergency/fight-or-flight: ↑heart rate, ↑blood glucose, ↑breathing)
+- Pancreas: insulin (↓blood glucose, beta cells); glucagon (↑blood glucose, alpha cells); diabetes = lack of insulin
+- Gonads: testes (testosterone); ovaries (oestrogen, progesterone)
+
+CH11 REPRODUCTIVE SYSTEM:
+- Male: testes (scrotum, sperm+testosterone), epididymis, vas deferens, seminal vesicles, prostate, urethra, penis; Sperm: head (acrosome+23 chr), middle (mitochondria), tail (flagellum)
+- Female: ovaries (ova+oestrogen+progesterone), fallopian tubes, uterus, cervix, vagina; Ovum: 23 chromosomes, large, cannot move
+- Menstrual cycle: 28 days; menstruation (1-5), follicular phase (1-13), ovulation (day 14), luteal phase (15-28); controlled by FSH, LH, oestrogen, progesterone
+- Fertilisation in fallopian tube → zygote (46 chr); Implantation in uterus; Placenta exchanges nutrients/waste; Parturition triggered by oxytocin
+
+CH12 POPULATION:
+- Current world population ~8 billion; rapid rise due to improved healthcare, reduced mortality
+- Problems: food shortage, resource depletion, unemployment, pollution, poverty
+- Population control: family planning, education, women empowerment
+
+CH13 AIDS TO HEALTH:
+- Local defence: skin, mucus, cilia, tears (lysozyme), stomach acid
+- Immune system: T-cells (cell-mediated), B-cells (humoral, produce antibodies)
+- Antibodies: proteins vs antigens; memory cells for future immunity
+- Active immunity (body makes antibodies); Passive immunity (ready-made antibodies given)
+- Vaccination: weakened/dead pathogens; examples: BCG, polio, smallpox
+- Antiseptics (on living tissue: Dettol, Savlon); Disinfectants (non-living: bleach, phenol)
+- Antibiotics: from microorganisms; Penicillin from Penicillium notatum (Alexander Fleming, 1928)
+
+CH14 HUMAN EVOLUTION:
+- Darwin: natural selection, survival of fittest, variations, struggle for existence
+- Evidence: fossils, homologous organs (same structure, different function), analogous organs (different structure, same function), embryology, molecular
+- Human evolution: Dryopithecus → Ramapithecus → Australopithecus → Homo habilis → Homo erectus → Homo sapiens
+- Lamarck: use and disuse, inheritance of acquired characters
+
+CH15 POLLUTION:
+- Air: CO, CO2, SO2, NOx, CFCs; acid rain, greenhouse effect, ozone depletion, respiratory diseases
+- Water: sewage, industrial effluents, pesticides; cholera, typhoid, eutrophication
+- Soil: industrial waste, fertilizers, pesticides, biomedical waste
+- Noise: deafness, stress, hypertension
+- Radiation: cancer, mutations
+- Abatement: legislation, waste treatment, green energy, reforestation`,
+
+geography:`SELINA ICSE CLASS 10 GEOGRAPHY — FULL SYLLABUS
+
+CH1 SOIL RESOURCES:
+- Soil formed by weathering; profile: O (humus), A (topsoil), B (subsoil), C (parent rock)
+- Types:
+  * Alluvial (43%, most widespread): Ganga plains, coastal; khadar (new) + bhangar (old); very fertile; wheat, rice, sugarcane
+  * Black/Regur: Deccan plateau (Maharashtra, MP, Gujarat); cotton soil; holds moisture; iron+lime+calcium; poor N+P; self-ploughing; cotton, soyabean
+  * Red & Yellow: Eastern Deccan, Odisha; red=iron oxide; less fertile; needs irrigation; groundnut, tobacco
+  * Laterite: Western Ghats, Assam/Meghalaya hills; intense leaching; poor humus; acidic; tea, coffee, cashew
+  * Arid/Desert: Rajasthan; sandy; soluble salts; needs irrigation; millets, barley
+  * Mountain: Himalayan; thin; rich humus; acidic; tea, temperate fruits
+- Soil erosion: sheet, rill, gully, wind
+- Causes: deforestation, overgrazing, excessive tillage, heavy rain, strong winds
+- Conservation: afforestation, contour ploughing, terracing, strip cropping, shelter belts, check dams, crop rotation
+
+CH2 NATURAL VEGETATION:
+- Tropical Evergreen: >200cm rain; Western Ghats, NE India, Andaman; rosewood, ebony, mahogany; dense, no simultaneous leaf shed
+- Tropical Deciduous/Monsoon (most widespread): Moist (100-200cm: sal, teak-most valuable, bamboo); Dry (75-100cm: tendu, amaltas)
+- Thorn & Scrub: <75cm; Rajasthan; babul, kikar, cactus; thorny, long roots
+- Montane: 1000-2000m (oaks, chestnuts); 2000-3000m (conifers: pine, deodar, fir, spruce); >3000m (Alpine: silver fir, birch, rhododendron); above snowline: mosses, lichens
+- Mangrove/Tidal: deltas+coastal; Sunderbans (WB), Bhitarkanika; pneumatophores (breathing roots); Sundari, Rhizophora; protect coast from cyclones
+- Conservation: social forestry, Van Mahotsav, Project Tiger, biosphere reserves
+
+CH3 WATER RESOURCES:
+- India avg rainfall ~117cm but uneven; Himalayan rivers=perennial; Peninsular=seasonal
+- Major multipurpose projects: Bhakra Nangal (Sutlej, Punjab/HP), Damodar Valley (Jharkhand/WB), Hirakud (Mahanadi, Odisha), Nagarjunasagar (Krishna, AP), Sardar Sarovar (Narmada, Gujarat)
+- Conservation: rainwater harvesting, drip/sprinkler irrigation, reforestation, recycling
+
+CH4 MINERAL AND ENERGY RESOURCES:
+- Ferrous: Iron ore (Odisha, Jharkhand, Chhattisgarh, Karnataka; magnetite=best, haematite=most common); Manganese (Odisha, Karnataka; steel+batteries); Mica (Jharkhand, Rajasthan, AP; India=largest producer; electrical insulator)
+- Non-ferrous: Copper (Jharkhand-Singhbhum, Rajasthan-Khetri; electrical industry); Bauxite (Odisha, Gujarat; aluminium); Gold (Karnataka-Kolar/KGF); Lead+Zinc (Rajasthan-Zawar)
+- Coal: Gondwana coalfields (Jharkhand, WB, Odisha, MP, Chhattisgarh); anthracite>bituminous>lignite>peat; Jharia=largest coalfield; Raniganj
+- Petroleum: Mumbai High (offshore, largest), Ankleshwar+Kalol (Gujarat), Digboi (Assam-first refinery), Rajasthan; major refineries: Koyali, Barauni, Mathura, Trombay; ONGC
+- Natural gas: KG Basin, Gujarat, Rajasthan; GAIL pipelines
+- Nuclear: uranium (Jharkhand-Jaduguda); thorium (Kerala-monazite sands); plants: Tarapur, Rawatbhata, Kalpakkam, Narora
+- Solar: high potential in India; panels + thermal plants
+- Wind: Tamil Nadu (Muppandal=largest wind farm), Rajasthan, Gujarat, Maharashtra
+- Hydro: Himalayas; Bhakra Nangal, Hirakud
+
+CH5 AGRICULTURE:
+- India=agrarian; ~50% population; Kharif (June-Sep: rice, jowar, bajra, cotton, groundnut, jute, maize); Rabi (Oct-Mar: wheat, barley, gram, mustard); Zaid (Mar-Jun: watermelon, vegetables)
+- Rice: most important; WB, UP, AP, Punjab; 25°C+, >100cm rain or irrigation; kharif
+- Wheat: 2nd; UP, Punjab, Haryana; cool 10-15°C; moderate rain; rabi; Green Revolution
+- Cotton: white gold; Maharashtra, Gujarat, AP; black soil; kharif; textile industry
+- Jute: golden fibre; WB (Hooghly), Bihar, Assam; hot+humid+heavy rain; alluvial soil
+- Sugarcane: UP (largest), Maharashtra, TN; tropical; high rain or irrigation
+- Tea: Assam (largest), WB (Darjeeling=finest), Kerala, TN; 150-200cm rain; hilly slopes; acidic laterite; India=largest producer+consumer
+- Coffee: Karnataka (Coorg=largest), Kerala, TN; India=3rd largest in Asia
+- Green Revolution: 1960s; HYV seeds (wheat+rice); chemical fertilizers; irrigation; Punjab/Haryana/UP; Dr M.S. Swaminathan (India), Norman Borlaug (Nobel)
+- White Revolution (Operation Flood): milk; Dr Verghese Kurien; Amul; Gujarat cooperative
+
+CH6 MANUFACTURING INDUSTRIES:
+- Cotton textile: oldest+largest; Mumbai (Manchester of India), Ahmedabad (Manchester of East); needs humid climate
+- Jute industry: Kolkata=largest; Hooghly river; WB=90% of India's mills; declining due to plastics
+- Iron & Steel (basic industry): raw materials triangle (iron ore+coking coal+limestone in Jharkhand/Odisha/WB)
+  * Jamshedpur (TISCO=first+private; iron ore: Noamundi; coal: Jharia)
+  * Bhilai (SAIL; Chhattisgarh=largest plant)
+  * Rourkela (Odisha; German collaboration)
+  * Durgapur (WB; British collaboration)
+  * Bokaro (Jharkhand; Soviet collaboration)
+- Cement: Rajasthan, MP, AP, TN; raw materials: limestone+clay+gypsum
+- Electronics: Bengaluru (Silicon Valley of India), Chennai, Hyderabad
+- Factors of industrial location: raw material, power, water, labour, transport, market, capital, government policy
+
+CH7 TRANSPORT:
+- Railways: backbone; largest in Asia, 4th in world; broad gauge (1.676m), metre, narrow; 18 zones; Konkan Railway (challenging terrain)
+- Roadways: National Highways; Golden Quadrilateral (Delhi-Mumbai-Chennai-Kolkata); PMGSY rural roads
+- Airways: fastest; Air India (international); major airports: Delhi (IGI), Mumbai, Chennai, Kolkata; important for hilly/island areas
+- Waterways: cheapest for bulky goods; NW1 (Ganga: Allahabad-Haldia), NW2 (Brahmaputra), NW3 (West Coast Canal); 12 major ports; Mumbai=largest; JNPT=busiest; Kandla, Chennai, Kolkata-Haldia, Kochi, Vishakhapatnam, Paradip
+- Pipelines: oil, gas, water; HBJ pipeline (Hazira-Bijapur-Jagdishpur for natural gas)
+
+CH8 WASTE MANAGEMENT:
+- Types: Municipal solid waste, Industrial waste, Biomedical (incinerate), E-waste (hazardous metals: Hg, Pb, Cd), Nuclear/Radioactive (most dangerous), Agricultural
+- Disposal: Landfill (sanitary); Incineration (burning, energy recovery); Composting (vermicomposting); Biogas (organic+anaerobic bacteria→methane); Recycling (3Rs: Reduce, Reuse, Recycle); Sewage treatment (primary=physical, secondary=biological, tertiary=chemical)
+- Individual role: segregation at source, composting, minimise plastic
+
+CH9 MAP OF INDIA:
+- Tropic of Cancer (23.5°N): Gujarat, Rajasthan, MP, Chhattisgarh, Jharkhand, WB, Tripura, Mizoram
+- Standard Meridian (82.5°E): through Mirzapur, UP
+- Major rivers: Ganga, Yamuna, Brahmaputra, Indus, Krishna, Godavari, Kaveri, Mahanadi, Narmada, Tapi, Damodar
+- Industrial centres, coalfields, oilfields, ports to locate on map`
+};
+
+const suggestions={
+  geography:[
+    {text:'Explain the types of soil in India with characteristics',label:'Geography'},
+    {text:'What are the types of natural vegetation in India?',label:'Geography'},
+    {text:'Describe the iron and steel industry — locations and raw materials',label:'Geography'},
+    {text:'What is soil erosion and how can it be prevented?',label:'Geography'}
+  ],
+  biology:[
+    {text:'Explain Mitosis with all its phases',label:'Biology'},
+    {text:'What is the structure of the kidney? How is urine formed?',label:'Biology'},
+    {text:'Describe photosynthesis — light and dark reactions',label:'Biology'},
+    {text:'Explain the structure and functions of the human brain',label:'Biology'}
+  ]
+};
+
+function buildSystemPrompt(){
+  const subjectName=currentSubject==='geography'?'Geography':'Biology';
+  const textbook=currentSubject==='geography'?'Selina Concise ICSE Geography Class 10':'Selina Concise Biology Class 10';
+  const chapterContext=currentChapter?`\nFocused chapter: Chapter ${currentChapter.num} — ${currentChapter.title}`:'';
+  const modeInstructions={
+    chat:'Answer clearly and accurately based on the textbook. Use proper headings and board-exam style structure.',
+    notes:'Generate detailed exam-ready revision notes. Include: Key Terms, Important Points, Diagram label points, and Exam Tips.',
+    exam:'Generate ICSE-style questions: 1-mark, 2-mark, 4-mark, 6-mark. Include model answers for each.',
+    definition:'Give the precise ICSE-standard definition, expanded explanation, example, diagram labels (if applicable), and a memory tip.',
+    summary:'Give a concise bullet-point revision summary with all key facts for ICSE board exam. Mark common exam traps.'
+  };
+  return `You are ICSEit, an expert AI tutor for ICSE Class 10 students in India.
+Your answers are based STRICTLY on the ${textbook}.${chapterContext}
+
+TEXTBOOK KNOWLEDGE BASE:
+${selinaKnowledge[currentSubject]}
+
+RULES:
+1. ALL answers must be based on the Selina textbook content above
+2. Use exact Selina textbook terminology
+3. When a diagram is relevant, say: "In your Selina textbook (refer diagram): label points include..."
+4. Structure answers as expected in ICSE board exams
+5. Mention marks value where relevant
+6. Simple language for Class 10 (15-year-old) students
+7. If topic is beyond ICSE Class 10 syllabus, say so politely
+
+MODE: ${currentMode}
+INSTRUCTION: ${modeInstructions[currentMode]}
+
+Format: ## for main headings, ### for sub-headings, - for bullets, **bold** for key terms. End with **Exam Tip**: [content]`;
+}
+
+function renderChapters(){
+  const list=document.getElementById('chapter-list');
+  const chs=chapters[currentSubject], isBio=currentSubject==='biology';
+  list.innerHTML=chs.map(ch=>`
+    <button class="chapter-btn ${currentChapter&&currentChapter.num===ch.num?(isBio?'active':'active-geo'):''}"
+      onclick="setChapter(${ch.num},'${ch.title.replace(/'/g,"\\'")}',this)">
+      <span class="chapter-num">${ch.num}</span>${ch.title}
+    </button>`).join('');
+}
+
+function setChapter(num,title,btn){
+  currentChapter={num,title};
+  document.querySelectorAll('.chapter-btn').forEach(b=>b.classList.remove('active','active-geo'));
+  btn.classList.add(currentSubject==='biology'?'active':'active-geo');
+  const input=document.getElementById('chat-input');
+  input.placeholder=`Ask about Ch ${num}: ${title}…`;
+  input.focus();
+}
+
+function renderSuggestions(){
+  const grid=document.getElementById('suggestion-grid');
+  if(!grid)return;
+  grid.innerHTML=suggestions[currentSubject].map(s=>`
+    <div class="suggestion-card" data-sub="${currentSubject}" onclick="submitSuggestion('${s.text.replace(/'/g,"\\'")}')">
+      <div class="s-label">${s.label}</div>
+      <div class="s-text">${s.text}</div>
+    </div>`).join('');
+}
+
+function submitSuggestion(text){document.getElementById('chat-input').value=text;sendMessage();}
+
+function setSubject(sub,btn){
+  currentSubject=sub; currentChapter=null; messages=[];
+  document.querySelectorAll('.subject-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const tag=document.getElementById('subject-tag');
+  if(sub==='geography'){tag.textContent='🌍 Geography';tag.className='current-subject geo';}
+  else{tag.textContent='🧬 Biology';tag.className='current-subject bio';}
+  document.getElementById('chat-input').placeholder='Ask about any topic from your textbook…';
+  renderChapters();clearChat();
+}
+
+function setMode(mode,btn){
+  currentMode=mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const labels={chat:'Ask Anything',notes:'Make Notes',exam:'Exam Questions',definition:'Definitions',summary:'Quick Summary'};
+  document.getElementById('mode-tag').textContent=labels[mode];
+}
+
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');}
+
+function clearChat(){
+  messages=[];
+  document.getElementById('chat-inner').innerHTML=`
+    <div class="welcome" id="welcome-screen">
+      <div class="welcome-icon">📚</div>
+      <h1>Study smarter with <em>ICSEit</em></h1>
+      <p>Answers based directly on your <strong>Selina Concise</strong> Class 10 textbooks — Geography &amp; Biology.</p>
+      <div class="source-badge">📗 Selina Concise Textbook · ICSE Class 10</div>
+      <div class="suggestion-grid" id="suggestion-grid"></div>
+    </div>`;
+  renderSuggestions();
+}
+
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px';}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
+
+function renderMarkdown(text){
+  const cls=currentSubject==='geography'?'geo':'bio';
+  text=text.replace(/\*\*Exam Tip[s]?\*\*:?([\s\S]*?)(?=\n\n|\n\*\*|\n##|$)/gi,(_,content)=>
+    `<div class="exam-box"><div class="ex-title">📋 Exam Tip</div>${content.trim()}</div>`);
+  text=text.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  text=text.replace(/^## (.+)$/gm,`<div class="section-head ${cls}">$1</div>`);
+  text=text.replace(/^# (.+)$/gm,'<h3>$1</h3>');
+  text=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  text=text.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  text=text.replace(/((?:^[-•] .+\n?)+)/gm,match=>{
+    const items=match.trim().split('\n').map(l=>`<li>${l.replace(/^[-•] /,'')}</li>`).join('');
+    return `<ul class="point-list">${items}</ul>`;
+  });
+  text=text.replace(/((?:^\d+\. .+\n?)+)/gm,match=>{
+    const items=match.trim().split('\n').map(l=>`<li>${l.replace(/^\d+\. /,'')}</li>`).join('');
+    return `<ol>${items}</ol>`;
+  });
+  text=text.split('\n\n').map(p=>{
+    p=p.trim();if(!p)return'';if(p.startsWith('<'))return p;return`<p>${p}</p>`;
+  }).join('\n');
+  return text;
+}
+
+function appendMessage(role,html){
+  document.getElementById('welcome-screen')?.remove();
+  const inner=document.getElementById('chat-inner');
+  const div=document.createElement('div');
+  div.className=`message ${role}`;
+  div.innerHTML=`<div class="avatar">${role==='user'?'👤':'🎓'}</div><div class="bubble">${html}</div>`;
+  inner.appendChild(div);
+  div.scrollIntoView({behavior:'smooth',block:'end'});
+}
+
+function appendTyping(){
+  document.getElementById('welcome-screen')?.remove();
+  const inner=document.getElementById('chat-inner');
+  const div=document.createElement('div');
+  div.className='message assistant';div.id='typing-msg';
+  div.innerHTML=`<div class="avatar">🎓</div><div class="bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  inner.appendChild(div);
+  div.scrollIntoView({behavior:'smooth',block:'end'});
+}
+
+async function sendMessage(){
+  if(isLoading)return;
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
+  if(!text)return;
+  input.value='';input.style.height='auto';
+  isLoading=true;document.getElementById('send-btn').disabled=true;
+  appendMessage('user',`<p>${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`);
+  messages.push({role:'user',content:text});
+  appendTyping();
+  try{
+    const response=await fetch("http://127.0.0.1:3000/chat", {
+      method:'POST',
+      headers:{'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: text
+  })
+});
+    const data=await response.json();
+    document.getElementById('typing-msg')?.remove();
+    const replyText=data.content?.[0]?.text||'Sorry, could not get a response. Please try again.';
+    messages.push({role:'assistant',content:replyText});
+    appendMessage('assistant',renderMarkdown(replyText));
+  }catch(err){
+    document.getElementById('typing-msg')?.remove();
+    appendMessage('assistant',`<p style="color:#f87171">Connection error. Please try again.</p>`);
+  }
+  isLoading=false;document.getElementById('send-btn').disabled=false;
+  document.getElementById('chat-input').focus();
+}
+
+renderChapters();
+renderSuggestions();
+</script>
+</body>
+</html>
