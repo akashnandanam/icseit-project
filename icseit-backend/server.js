@@ -13,6 +13,9 @@ app.use(cors({
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
 
 app.post("/chat", async (req, res) => {
   try {
