@@ -587,6 +587,7 @@ async function sendMessage(){
   isLoading=true;document.getElementById('send-btn').disabled=true;
   appendMessage('user',`<p>${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`);
   messages.push({role:'user',content:text});
+  localStorage.setItem("chat", JSON.stringify(messages));
   appendTyping();
   try{
     const response=await fetch("https://icseit-backend.onrender.com/chat", {
@@ -601,6 +602,7 @@ async function sendMessage(){
     document.getElementById('typing-msg')?.remove();
     const replyText=data.content?.[0]?.text||'Sorry, could not get a response. Please try again.';
     messages.push({role:'assistant',content:replyText});
+    localStorage.setItem("chat", JSON.stringify(messages));
     appendMessage('assistant',renderMarkdown(replyText));
   }catch(err){
     document.getElementById('typing-msg')?.remove();
